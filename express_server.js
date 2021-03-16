@@ -14,6 +14,7 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+
 //function to generate shortURL;
 const generateRandomString = () => {
   const chars = 'abcdefghijklmnop0123456789';
@@ -76,7 +77,29 @@ app.listen(PORT, () => {
 });
 
 //post request when delete button is pressed. removes the shortURL from urlDatabase and redirect to /urls
-app.post('/urls/:shortURL/delete', (req,res) => {
+app.post('/urls/:shortURL/delete', (req, res) => {
   delete urlDatabase[req.params.shortURL];
+  res.redirect('/urls');
+});
+
+
+const updateLongUrl = (editURL, content) => {
+  urlDatabase[editURL] = content;
+};
+
+app.post('/urls/:shortURL/edit', (req, res) => {
+  let shortURL = req.params.shortURL;
+  res.redirect(`/urls/${shortURL}`);
+});
+
+//when longURL is submitted in the edit url
+app.post('/urls/:editURL', (req,res) => {
+  //extract the editURL from path
+  const editURL = req.params.editURL;
+  console.log("editURL", editURL);
+  //get contents of form (longURL)
+  const urlContent = req.body['url-edit'];
+  console.log(req.body);
+  updateLongUrl(editURL, urlContent);
   res.redirect('/urls');
 });
