@@ -7,11 +7,14 @@ app.set('view engine', 'ejs');
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
+
+//object of shortURL: longURL
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
+//function to generate shortURL;
 const generateRandomString = () => {
   const chars = 'abcdefghijklmnop0123456789';
   let random = "";
@@ -21,30 +24,33 @@ const generateRandomString = () => {
   } return random;
 };
 
+//when a request is made to /urls. EJS file urls_index will render. In the EJS file, will use key urls to refer to the urlDatabase object. 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
-  console.log(templateVars);
 });
 
+//urls/new will display a form to enter a http://url to submit. when a request is made to /urls/new, the EJS file urls_new will render.
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//when a post/input is put into the /urls page, the generateRandomString will run to get a random shortURL. Will add that shortURL to the urlDatabase object with the req.body.longURL
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
 });
 
-
+//
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]
   };
+  const longURL = req.params.shortURL;
+  console.log(longURL);
   res.render("urls_show", templateVars);
-  console.log(templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -56,6 +62,7 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+//to show in browser the json data of urlDatabase
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -66,4 +73,10 @@ app.get("/hello", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
+});
+
+//post request when delete button is pressed. removes the shortURL from urlDatabase and redirect to /urls
+app.post('/urls/:shortURL/delete', (req,res) => {
+  delete urlDatabase[req.params.shortURL];
+  res.redirect('/urls');
 });
