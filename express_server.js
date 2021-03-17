@@ -2,10 +2,19 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
+app.use(morgan('short'));
+
+
+
+app.use(cookieParser());
 
 app.set('view engine', 'ejs');
 
+
 const bodyParser = require("body-parser");
+
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //object of shortURL: longURL
@@ -27,13 +36,18 @@ const generateRandomString = () => {
 
 //when a request is made to /urls. EJS file urls_index will render. In the EJS file, will use key urls to refer to the urlDatabase object. 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"] };
   res.render("urls_index", templateVars);
 });
 
 //urls/new will display a form to enter a http://url to submit. when a request is made to /urls/new, the EJS file urls_new will render.
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    username: req.cookies["username"]
+  };
+  res.render("urls_new", templateVars);
 });
 
 //when a post/input is put into the /urls page, the generateRandomString will run to get a random shortURL. Will add that shortURL to the urlDatabase object with the req.body.longURL
@@ -47,7 +61,8 @@ app.post("/urls", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL]
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies["username"]
   };
   const longURL = req.params.shortURL;
   console.log(longURL);
@@ -103,3 +118,14 @@ app.post('/urls/:editURL', (req,res) => {
   updateLongUrl(editURL, urlContent);
   res.redirect('/urls');
 });
+
+//Login
+app.post('/login', (req,res) => {
+  const loginContent = req.body['username'];
+  res.cookie('username', loginContent);
+  res.redirect('/urls');
+});
+
+
+
+
