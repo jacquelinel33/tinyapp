@@ -4,23 +4,63 @@ const app = express();
 const PORT = 8080; // default port 8080
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
-app.use(morgan('short'));
-
-
-
-app.use(cookieParser());
-
-app.set('view engine', 'ejs');
-
-
 const bodyParser = require("body-parser");
 
+app.use(morgan('short'));
+app.use(cookieParser());
+app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
+
 
 //object of shortURL: longURL
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
+};
+
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "jlee4332@gmail.com",
+    password: "1234"
+  }
+};
+
+
+const addNewUser = (email, password) => {
+  const userId = Math.random().toString(36).substring(2, 8);
+  
+  const newUser = {
+    id: userId,
+    email,
+    password,
+  };
+  
+  users[userId] = newUser;
+  return userId;
+  
+};
+
+const findIdByEmail = email => {
+  for (let userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+  return false;
+};
+
+const authenticateUser = (email , password) => {
+  let user = findIdByEmail(email);
+  if(user.password === password) {
+    return user.id;
+  }
+  return false;
 };
 
 
@@ -38,14 +78,15 @@ const generateRandomString = () => {
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"] };
+    user: users[req.cookies.userId],
+  };
   res.render("urls_index", templateVars);
 });
 
 //urls/new will display a form to enter a http://url to submit. when a request is made to /urls/new, the EJS file urls_new will render.
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    username: req.cookies["username"]
+    user: users[req.cookies.userId],
   };
   res.render("urls_new", templateVars);
 });
@@ -62,7 +103,7 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies["username"]
+    user: users[req.cookies.userId],
   };
   const longURL = req.params.shortURL;
   console.log(longURL);
@@ -108,7 +149,7 @@ app.post('/urls/:shortURL/edit', (req, res) => {
 });
 
 //when longURL is submitted in the edit url
-app.post('/urls/:editURL', (req,res) => {
+app.post('/urls/:editURL', (req, res) => {
   //extract the editURL from path
   const editURL = req.params.editURL;
   console.log("editURL", editURL);
@@ -119,17 +160,41 @@ app.post('/urls/:editURL', (req,res) => {
   res.redirect('/urls');
 });
 
-//Login
-app.post('/login', (req,res) => {
-  const loginContent = req.body['username'];
-  res.cookie('username', loginContent);
-  res.redirect('/urls');
-});
-
-app.post('/logout', (req,res) => {
-  res.clearCookie('username');
-  res.redirect('/urls');
+//displays login page when login is clicked
+app.get('/login', (req,res) => {
+  res.render('login');
 });
 
 
+app.post('/login', (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const userId = authenticateUser(email, password);
+  
+  if (userId) {
+    res.cookie('userId', userId);
+    res.redirect('/urls');
+  } else {
+    res.status(403).send('Wrong login');
+  }
+});
+
+
+
+app.get('/logout', (req, res) => {
+  res.clearCookie('userId');
+  res.redirect('/urls');
+});
+
+app.get('/register', (req, res) => {
+  res.render('register');
+});
+
+app.post('/register', (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const userId = addNewUser(email, password);
+  res.cookie('userId', userId);
+  res.redirect('/urls');
+});
 
