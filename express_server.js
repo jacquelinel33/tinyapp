@@ -18,6 +18,11 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+// const urlDatabase = {
+//   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+//   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
+// };
+
 const users = {
   "userRandomID": {
     id: "userRandomID",
@@ -58,7 +63,8 @@ const findIdByEmail = email => {
 const authenticateUser = (email, password) => {
   let user = findIdByEmail(email);
   if (user.password === password) {
-    return user.email;
+    console.log(user.email);
+    return user.id;
   }
   return false;
 };
@@ -74,25 +80,27 @@ const generateRandomString = () => {
   } return random;
 };
 
-//when a request is made to /urls. EJS file urls_index will render. In the EJS file, will use key urls to refer to the urlDatabase object. 
+//when a request is made to /urls. EJS file urls_index will render. In the EJS file, will use key urls to refer to the urlDatabase object.
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    user: users[req.cookies.userId],
+    user: users[req.cookies.user_id],
   };
+  console.log("template", templateVars)
   res.render("urls_index", templateVars);
 });
 
 //urls/new will display a form to enter a http://url to submit. when a request is made to /urls/new, the EJS file urls_new will render.
 app.get("/urls/new", (req, res) => {
-  if(req.cookies.newId) {
-    const templateVars = {
-      user: users[req.cookies.userId],
-    };
-    res.render("urls_new", templateVars);
-  } else {
-    res.redirect('/login');
-  }
+  // if(req.cookies.newId) {
+  const templateVars = {
+    user: users[req.cookies.userId],
+  };
+  res.render("urls_new", templateVars);
+  // } 
+  // else {
+  //   res.redirect('/login');
+  // }
 });
 
 //when a post/input is put into the /urls page, the generateRandomString will run to get a random shortURL. Will add that shortURL to the urlDatabase object with the req.body.longURL
@@ -138,7 +146,7 @@ app.listen(PORT, () => {
 
 //post request when delete button is pressed. removes the shortURL from urlDatabase and redirect to /urls
 app.post('/urls/:shortURL/delete', (req, res) => {
-  if(urlDatabase[req.params.shortURL].usersId === req.cookies.userId) {
+  if (urlDatabase[req.params.shortURL].usersId === req.cookies.userId) {
     delete urlDatabase[req.params.shortURL];
     res.redirect('/urls');
   } else {
@@ -179,23 +187,22 @@ app.get('/login', (req, res) => {
   res.render('login');
 });
 
-
+//when email and password are entered into login page
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userId = authenticateUser(email, password);
-  if (userId) {
-    res.cookie('user_id', userId);
+  const user_id = authenticateUser(email, password);
+  if (user_id) {
+    res.cookie('user_id', user_id);
+    console.log(req.cookies)
     res.redirect('/urls');
   } else {
     res.status(403).send('Wrong login');
   }
 });
 
-
-
-app.post('/logout', (req, res) => {
-  res.clearCookie('userId');
+app.get('/logout', (req, res) => {
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
@@ -206,8 +213,8 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userId = addNewUser(email, password);
-  res.cookie('userId', userId);
+  const user_id = addNewUser(email, password);
+  res.cookie('user_id', user_id);
   res.redirect('/urls');
 });
 
