@@ -3,8 +3,19 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 const cookieParser = require('cookie-parser');
+// const cookieSession = require('cookie-session');
 const morgan = require('morgan');
 const bodyParser = require("body-parser");
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
+
+// app.use(cookieSession({
+//   name: 'session',
+//   keys: ['key1', 'key2']
+// })
+// );
+
 
 app.use(morgan('short'));
 app.use(cookieParser());
@@ -18,40 +29,67 @@ app.listen(PORT, () => {
 const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
-    userID: "hellojello"
+    userID: "userid34treg"
   },
   i3BoGr: {
     longURL: "https://www.google.ca",
-    userID: "l18hby"
+    userID: "useridrt88ev"
   }
 };
 
 const users = {
-  "userRandomID": {
-    id: "userRandomID",
+  "userid34treg": {
+    id: "userid34treg",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", saltRounds),
   },
-  "hellojello": {
-    id: "hellojello",
+  "useridrt88ev": {
+    id: 'useridrt88ev',
     email: "jlee4332@gmail.com",
-    password: "1234"
+    password: bcrypt.hashSync("1234", saltRounds),
   },
-  "l18hby": {
-    id: "l18hby",
+  "userid34treg": {
+    id: "useridl18hby",
     email: "hello@gmail.com",
-    password: "hello",
+    password: bcrypt.hashSync('hello', saltRounds),
   }
 };
 
+//to show in browser the json data of urlDatabase
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
+
+app.get("/login.json", (req, res) => {
+  res.json(users);
+});
+
+const checkPassword = (inputPw, usersDb) => {
+  const encryptPw = bcrypt.hashSync(inputPw, saltRounds);
+  for (let id in users) {
+    if (usersDb[id].password === encryptPw) {
+      return true;
+    }
+  }
+};
+
+const checkEmail = (email, usersDb) => {
+  console.log("pass");
+  for (let id in usersDb) {
+    if (usersDb[id].email === email) {
+
+      return true;
+    }
+  }
+};
 
 const addNewUser = (email, password) => {
-  const userId = Math.random().toString(36).substring(2, 8);
+  const userId = 'userid' + `Math.random().toString(36).substring(2, 8)`;
 
   const newUser = {
     id: userId,
     email,
-    password,
+    password: bcrypt.hashSync(password, saltRounds)
   };
 
   users[userId] = newUser;
@@ -59,18 +97,41 @@ const addNewUser = (email, password) => {
 
 };
 
+//hashing password
+//npm i bcrypt
+// const bcrypt = require('bcrypt');
+// const saltRounds = 10;
+// in addNewUser
+//password: bcrypt.hashSync(password, saltRounds)
+//change any pw comparisons of plain text to hashed 
+//to check bcrypt.compareSync
+//dont want cookie in plain text. because others can access profile by changing it in the application window
+//use encryption
+//cookie-session
+//disable cookie parser
+//nom install cookie-session
+//replace all instances of cookie parser with cookie-session
+//res.cookie('user_id', user_id) = req.session['user_id'] = user_id
+//res.clearCookie() = req.session['cookiename'] = null;
+// req.cookies['user_id'] = req.session['user_id']
+
+
+
+
 const findIdByEmail = email => {
-  for (let userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
+  for (let id in users) {
+    if (users[id].email === email) {
+      return users[id];
     }
   }
   return false;
 };
 
+
+//if user exists and if bcrypt password = user.password and returns user id
 const authenticateUser = (email, password) => {
   let user = findIdByEmail(email);
-  if (user.password === password) {
+  if (user && bcrypt.compareSync(password, user.password)) {
     console.log(user.email);
     return user.id;
   }
@@ -88,28 +149,28 @@ const generateRandomString = () => {
   } return random;
 };
 
-const shortUrlById = user_id => {
-  for (let shortUrl in urlDatabase) {
-    return shortUrl;
-  }
-  //     if(urlDatabase[shortUrl].userID === user_id) {
-  //       return shortUrl;
-  //     }
-  //   }
-  //  return false;
-};
 //when a request is made to /urls. EJS file urls_index will render. In the EJS file, will use key urls to refer to the urlDatabase object.
-app.get("/urls", (req, res) => {
-  let shortUrl = shortUrlById(req.cookies.user_id);
-  const templateVars = {
-    // urls: urlDatabase,
-    urls: urlDatabase,
-    user: users[req.cookies.user_id],
 
+app.get("/urls", (req, res) => {
+  let filteredUrls = urlsForUserId(req.cookies.user_id, urlDatabase);
+  const templateVars = {
+    urls: filteredUrls,
+    user: users[req.cookies.user_id],
   };
-  console.log("template", templateVars)
   res.render("urls_index", templateVars);
 });
+
+
+const urlsForUserId = (userId, urlDatabase) => {
+  const newDb = {};
+  for (let shorturl in urlDatabase) {
+    if (urlDatabase[shorturl].userID === userId) {
+      newDb[shorturl] = urlDatabase[shorturl];
+    }
+  } return newDb;
+};
+
+
 
 //urls/new will display a form to enter a http://url to submit. when a request is made to /urls/new, the EJS file urls_new will render.
 app.get("/urls/new", (req, res) => {
@@ -157,19 +218,15 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-//to show in browser the json data of urlDatabase
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
 
 
 //post request when delete button is pressed. removes the shortURL from urlDatabase and redirect to /urls
 app.post('/urls/:shortURL/delete', (req, res) => {
-  // if (urlDatabase[req.params.shortURL]) {
-    if (urlDatabase[req.params.shortURL].userID === req.cookies.user_id) {
-      delete urlDatabase[req.params.shortURL];
-      res.redirect('/urls');
-    } res.redirect('/urls');
+  // if what's in the database matches cookie info, then proceed with changes
+  if (urlDatabase[req.params.shortURL].userID === req.cookies.user_id) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('/urls');
+  } res.redirect('/urls');
 
   // } res.redirect('/urls');
 
@@ -193,7 +250,7 @@ const updateLongUrl = (shortURL, content) => {
 
 //when edit button is clicked
 app.post('/urls/:shortURL/edit', (req, res) => {
-  // if database use id = cookies userid(logged in)
+  // if what's in the database matches cookie info, then proceed with changes
   if (urlDatabase[req.params.shortURL].userID === req.cookies.user_id) {
     let shortURL = req.params.shortURL;
     res.redirect(`/urls/${shortURL}`);
@@ -221,6 +278,7 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+  //checks if user and password match
   const user_id = authenticateUser(email, password);
   if (user_id) {
     res.cookie('user_id', user_id);
@@ -243,7 +301,19 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const user_id = addNewUser(email, password);
-  res.cookie('user_id', user_id);
-  res.redirect('/urls');
+  //check if email or pw empty
+  if (!email || !password) {
+    res.status(400).send('You must enter an email and password');
+  }
+  else if (checkEmail(email, users)) {
+    res.status(400).send('Email already exists');
+  }
+  //check if email already exist
+  else {
+    const user_id = addNewUser(email, password);
+    res.cookie('user_id', user_id);
+    res.redirect('/urls');
+  }
 });
+
+
