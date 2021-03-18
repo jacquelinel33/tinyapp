@@ -34,16 +34,16 @@ const users = {
 
 const addNewUser = (email, password) => {
   const userId = Math.random().toString(36).substring(2, 8);
-  
+
   const newUser = {
     id: userId,
     email,
     password,
   };
-  
+
   users[userId] = newUser;
   return userId;
-  
+
 };
 
 const findIdByEmail = email => {
@@ -55,10 +55,10 @@ const findIdByEmail = email => {
   return false;
 };
 
-const authenticateUser = (email , password) => {
+const authenticateUser = (email, password) => {
   let user = findIdByEmail(email);
-  if(user.password === password) {
-    return user.id;
+  if (user.password === password) {
+    return user.email;
   }
   return false;
 };
@@ -85,10 +85,14 @@ app.get("/urls", (req, res) => {
 
 //urls/new will display a form to enter a http://url to submit. when a request is made to /urls/new, the EJS file urls_new will render.
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    user: users[req.cookies.userId],
-  };
-  res.render("urls_new", templateVars);
+  if(req.cookies.newId) {
+    const templateVars = {
+      user: users[req.cookies.userId],
+    };
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect('/login');
+  }
 });
 
 //when a post/input is put into the /urls page, the generateRandomString will run to get a random shortURL. Will add that shortURL to the urlDatabase object with the req.body.longURL
@@ -134,8 +138,12 @@ app.listen(PORT, () => {
 
 //post request when delete button is pressed. removes the shortURL from urlDatabase and redirect to /urls
 app.post('/urls/:shortURL/delete', (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect('/urls');
+  if(urlDatabase[req.params.shortURL].usersId === req.cookies.userId) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login');
+  }
 });
 
 
@@ -144,8 +152,14 @@ const updateLongUrl = (editURL, content) => {
 };
 
 app.post('/urls/:shortURL/edit', (req, res) => {
-  let shortURL = req.params.shortURL;
-  res.redirect(`/urls/${shortURL}`);
+  //if database use id = cookies userid(logged in)
+  if (urlDatabase[req.params.shortURL].userId === req.cookies.userId) {
+    let shortURL = req.params.shortURL;
+    res.redirect(`/urls/${shortURL}`);
+  } else {
+    res.redirect('/login');
+  }
+
 });
 
 //when longURL is submitted in the edit url
@@ -161,7 +175,7 @@ app.post('/urls/:editURL', (req, res) => {
 });
 
 //displays login page when login is clicked
-app.get('/login', (req,res) => {
+app.get('/login', (req, res) => {
   res.render('login');
 });
 
@@ -170,9 +184,8 @@ app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const userId = authenticateUser(email, password);
-  
   if (userId) {
-    res.cookie('userId', userId);
+    res.cookie('user_id', userId);
     res.redirect('/urls');
   } else {
     res.status(403).send('Wrong login');
@@ -181,7 +194,7 @@ app.post('/login', (req, res) => {
 
 
 
-app.get('/logout', (req, res) => {
+app.post('/logout', (req, res) => {
   res.clearCookie('userId');
   res.redirect('/urls');
 });
