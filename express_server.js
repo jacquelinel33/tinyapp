@@ -2,23 +2,23 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
-const cookieParser = require('cookie-parser');
-// const cookieSession = require('cookie-session');
+// const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session')
 const morgan = require('morgan');
 const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
 
-// app.use(cookieSession({
-//   name: 'session',
-//   keys: ['key1', 'key2']
-// })
-// );
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+})
+);
 
 
 app.use(morgan('short'));
-app.use(cookieParser());
+// app.use(cookieParser());
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -132,7 +132,6 @@ const findIdByEmail = email => {
 const authenticateUser = (email, password) => {
   let user = findIdByEmail(email);
   if (user && bcrypt.compareSync(password, user.password)) {
-    console.log(user.email);
     return user.id;
   }
   return false;
@@ -152,15 +151,16 @@ const generateRandomString = () => {
 //when a request is made to /urls. EJS file urls_index will render. In the EJS file, will use key urls to refer to the urlDatabase object.
 
 app.get("/urls", (req, res) => {
-  let filteredUrls = urlsForUserId(req.cookies.user_id, urlDatabase);
+  let filteredUrls = urlsForUserId(req.session.user_id, urlDatabase);
+  console.log("users reqsession", users[req.session.user_id]);
   const templateVars = {
     urls: filteredUrls,
-    user: users[req.cookies.user_id],
+    user: users[req.session.user_id],
   };
   res.render("urls_index", templateVars);
 });
 
-
+//return filtered urldatabase matching userId 
 const urlsForUserId = (userId, urlDatabase) => {
   const newDb = {};
   for (let shorturl in urlDatabase) {
@@ -174,9 +174,9 @@ const urlsForUserId = (userId, urlDatabase) => {
 
 //urls/new will display a form to enter a http://url to submit. when a request is made to /urls/new, the EJS file urls_new will render.
 app.get("/urls/new", (req, res) => {
-  if (req.cookies.user_id) {
+  if (req.session.user_id) {
     const templateVars = {
-      user: users[req.cookies.user_id],
+      user: users[req.session.user_id],
     };
     res.render("urls_new", templateVars);
   }
@@ -191,7 +191,7 @@ app.post("/urls", (req, res) => {
   //add new url to database with user id and long url
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
-    userID: req.cookies.user_id
+    userID: req.session.user_id
   };
   console.log("updateurlDB", urlDatabase);
   res.redirect(`/urls/${shortURL}`);
@@ -203,7 +203,7 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user: users[req.cookies.user_id],
+    user: users[req.session.user_id],
   };
   res.render("urls_show", templateVars);
 });
@@ -222,24 +222,10 @@ app.get("/", (req, res) => {
 
 //post request when delete button is pressed. removes the shortURL from urlDatabase and redirect to /urls
 app.post('/urls/:shortURL/delete', (req, res) => {
-  // if what's in the database matches cookie info, then proceed with changes
-  if (urlDatabase[req.params.shortURL].userID === req.cookies.user_id) {
+  if (urlDatabase[req.params.shortURL].userID === req.session.user_id) {
     delete urlDatabase[req.params.shortURL];
     res.redirect('/urls');
   } res.redirect('/urls');
-
-  // } res.redirect('/urls');
-
-
-  //  === req.cookies.user_id) {
-  //   console.log(urlDatabase[req.params.shortURL])
-  //   delete urlDatabase[req.params.shortURL];
-  //   res.redirect('/urls');
-  // } else {
-  //   res.redirect('/urls');
-  // }
-  // console.log("params",req.params);
-  // console.log("db",urlDatabase)
 });
 
 
@@ -251,7 +237,7 @@ const updateLongUrl = (shortURL, content) => {
 //when edit button is clicked
 app.post('/urls/:shortURL/edit', (req, res) => {
   // if what's in the database matches cookie info, then proceed with changes
-  if (urlDatabase[req.params.shortURL].userID === req.cookies.user_id) {
+  if (urlDatabase[req.params.shortURL].userID === req.session.user_id) {
     let shortURL = req.params.shortURL;
     res.redirect(`/urls/${shortURL}`);
   } else {
@@ -281,8 +267,7 @@ app.post('/login', (req, res) => {
   //checks if user and password match
   const user_id = authenticateUser(email, password);
   if (user_id) {
-    res.cookie('user_id', user_id);
-    console.log(req.cookies)
+    req.session['user_id'] = user_id;
     res.redirect('/urls');
   } else {
     res.status(403).send('Wrong login');
@@ -290,7 +275,7 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session['user_id'] = null;
   res.redirect('/urls');
 });
 
@@ -311,7 +296,7 @@ app.post('/register', (req, res) => {
   //check if email already exist
   else {
     const user_id = addNewUser(email, password);
-    res.cookie('user_id', user_id);
+    req.session['user_id'] = user_id;
     res.redirect('/urls');
   }
 });
