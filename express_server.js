@@ -11,17 +11,20 @@ app.use(cookieParser());
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
 
-//object of shortURL: longURL
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "hellojello"
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "l18hby"
+  }
 };
-
-// const urlDatabase = {
-//   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-//   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
-// };
 
 const users = {
   "userRandomID": {
@@ -29,10 +32,15 @@ const users = {
     email: "user@example.com",
     password: "purple-monkey-dinosaur"
   },
-  "user2RandomID": {
-    id: "user2RandomID",
+  "hellojello": {
+    id: "hellojello",
     email: "jlee4332@gmail.com",
     password: "1234"
+  },
+  "l18hby": {
+    id: "l18hby",
+    email: "hello@gmail.com",
+    password: "hello",
   }
 };
 
@@ -80,11 +88,24 @@ const generateRandomString = () => {
   } return random;
 };
 
+const shortUrlById = user_id => {
+  for (let shortUrl in urlDatabase) {
+    return shortUrl;
+  }
+  //     if(urlDatabase[shortUrl].userID === user_id) {
+  //       return shortUrl;
+  //     }
+  //   }
+  //  return false;
+};
 //when a request is made to /urls. EJS file urls_index will render. In the EJS file, will use key urls to refer to the urlDatabase object.
 app.get("/urls", (req, res) => {
+  let shortUrl = shortUrlById(req.cookies.user_id);
   const templateVars = {
+    // urls: urlDatabase,
     urls: urlDatabase,
     user: users[req.cookies.user_id],
+
   };
   console.log("template", templateVars)
   res.render("urls_index", templateVars);
@@ -92,38 +113,43 @@ app.get("/urls", (req, res) => {
 
 //urls/new will display a form to enter a http://url to submit. when a request is made to /urls/new, the EJS file urls_new will render.
 app.get("/urls/new", (req, res) => {
-  // if(req.cookies.newId) {
-  const templateVars = {
-    user: users[req.cookies.userId],
-  };
-  res.render("urls_new", templateVars);
-  // } 
-  // else {
-  //   res.redirect('/login');
-  // }
+  if (req.cookies.user_id) {
+    const templateVars = {
+      user: users[req.cookies.user_id],
+    };
+    res.render("urls_new", templateVars);
+  }
+  else {
+    res.redirect('/login');
+  }
 });
 
 //when a post/input is put into the /urls page, the generateRandomString will run to get a random shortURL. Will add that shortURL to the urlDatabase object with the req.body.longURL
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
+  //add new url to database with user id and long url
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.cookies.user_id
+  };
+  console.log("updateurlDB", urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
+
 
 //
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    user: users[req.cookies.userId],
+    longURL: urlDatabase[req.params.shortURL].longURL,
+    user: users[req.cookies.user_id],
   };
-  const longURL = req.params.shortURL;
-  console.log(longURL);
   res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  console.log(urlDatabase);
   res.redirect(longURL);
 });
 
@@ -136,49 +162,53 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
 
 //post request when delete button is pressed. removes the shortURL from urlDatabase and redirect to /urls
 app.post('/urls/:shortURL/delete', (req, res) => {
-  if (urlDatabase[req.params.shortURL].usersId === req.cookies.userId) {
-    delete urlDatabase[req.params.shortURL];
-    res.redirect('/urls');
-  } else {
-    res.redirect('/login');
-  }
+  // if (urlDatabase[req.params.shortURL]) {
+    if (urlDatabase[req.params.shortURL].userID === req.cookies.user_id) {
+      delete urlDatabase[req.params.shortURL];
+      res.redirect('/urls');
+    } res.redirect('/urls');
+
+  // } res.redirect('/urls');
+
+
+  //  === req.cookies.user_id) {
+  //   console.log(urlDatabase[req.params.shortURL])
+  //   delete urlDatabase[req.params.shortURL];
+  //   res.redirect('/urls');
+  // } else {
+  //   res.redirect('/urls');
+  // }
+  // console.log("params",req.params);
+  // console.log("db",urlDatabase)
 });
 
 
-const updateLongUrl = (editURL, content) => {
-  urlDatabase[editURL] = content;
+const updateLongUrl = (shortURL, content) => {
+  urlDatabase[shortURL].longURL = content;
 };
 
+
+//when edit button is clicked
 app.post('/urls/:shortURL/edit', (req, res) => {
-  //if database use id = cookies userid(logged in)
-  if (urlDatabase[req.params.shortURL].userId === req.cookies.userId) {
+  // if database use id = cookies userid(logged in)
+  if (urlDatabase[req.params.shortURL].userID === req.cookies.user_id) {
     let shortURL = req.params.shortURL;
     res.redirect(`/urls/${shortURL}`);
   } else {
-    res.redirect('/login');
+    res.redirect('/urls');
   }
-
 });
 
 //when longURL is submitted in the edit url
 app.post('/urls/:editURL', (req, res) => {
   //extract the editURL from path
-  const editURL = req.params.editURL;
-  console.log("editURL", editURL);
+  const shortURL = req.params.editURL;
   //get contents of form (longURL)
-  const urlContent = req.body['url-edit'];
-  console.log(req.body);
-  updateLongUrl(editURL, urlContent);
+  const longURL = req.body['url-edit'];
+  updateLongUrl(shortURL, longURL);
   res.redirect('/urls');
 });
 
@@ -217,4 +247,3 @@ app.post('/register', (req, res) => {
   res.cookie('user_id', user_id);
   res.redirect('/urls');
 });
-
