@@ -1,36 +1,13 @@
-const addNewUser = (email, password) => {
-  const userId = Math.random().toString(36).substring(2, 8);
-  
-  const newUser = {
-    id: userId,
-    email,
-    password,
-  };
-  
-  users[userId] = newUser;
-  return userId;
-  
-};
+const checkEmail = (email, usersDb) => {
+  console.log("pass");
+  for (let id in usersDb) {
+    if (usersDb[id].email === email) {
 
-const findIdByEmail = email => {
-  for (let userId in users) {
-    if(users[userId].email === email) {
-      return users[userId];
+      return true;
     }
   }
-  return false;
 };
 
-const authenticateUser = (email , password) => {
-  let user = findIdByEmail(email);
-  if(user.password === password) {
-    return user.email;
-  }
-  return false;
-};
-
-
-//function to generate shortURL;
 const generateRandomString = () => {
   const chars = 'abcdefghijklmnop0123456789';
   let random = "";
@@ -40,32 +17,40 @@ const generateRandomString = () => {
   } return random;
 };
 
-module.exports = { addNewUser, findIdByEmail, authenticateUser, generateRandomString }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "aJ48lW"
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "aJ48lW"
+const findIdByEmail = (email, users) => {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return users[user].id;
+    }
   }
+  return false;
 };
+
+//return filtered urlDatabase based on logged in user.
+const urlsForUserId = (userId, urlDatabase) => {
+  const newDb = {};
+  for (let shorturl in urlDatabase) {
+    if (urlDatabase[shorturl].userID === userId) {
+      newDb[shorturl] = urlDatabase[shorturl];
+    }
+  } return newDb;
+};
+
+module.exports = { checkEmail, generateRandomString, findIdByEmail, urlsForUserId };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
