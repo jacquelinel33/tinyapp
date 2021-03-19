@@ -1,5 +1,4 @@
 const checkEmail = (email, usersDb) => {
-  console.log("pass");
   for (let id in usersDb) {
     if (usersDb[id].email === email) {
 
@@ -20,13 +19,12 @@ const generateRandomString = () => {
 const findIdByEmail = (email, users) => {
   for (let user in users) {
     if (users[user].email === email) {
-      return users[user].id;
+      return users[user];
     }
   }
   return false;
 };
 
-//return filtered urlDatabase based on logged in user.
 const urlsForUserId = (userId, urlDatabase) => {
   const newDb = {};
   for (let shorturl in urlDatabase) {
