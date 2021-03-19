@@ -46,7 +46,7 @@ const users = {
     email: "jlee4332@gmail.com",
     password: bcrypt.hashSync("1234", saltRounds),
   },
-  "userid34treg": {
+  "useridl18hby": {
     id: "useridl18hby",
     email: "hello@gmail.com",
     password: bcrypt.hashSync('hello', saltRounds),
