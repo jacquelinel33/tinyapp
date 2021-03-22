@@ -27,17 +27,17 @@
           <tr>
             <td><%= url%></td>
             <td><%= urls[url].longURL %></td>
-            <td><form method="POST" action="urls/<%=url%>/edit">
+            <td><form method="GET" action="urls/<%=url%>/edit">
               <input class="btn btn-secondary btn-sm" type="submit" value="Edit"> 
             </form>
             </td>
-            <td><form method="POST" action="/urls/<%=url%>/delete">
+            <td><form method="GET" action="/urls/<%=url%>/delete">
               <input class="btn btn-secondary btn-sm" type="submit" value="Delete"> 
             </form> </td>
           </tr>
         <% } %>
         <% } else { %>
-          <p>Please login to see URL</p>
+          <p style="color: red;">Please login to see URL</p>
           <% }%>
       </tbody>
     </table>
