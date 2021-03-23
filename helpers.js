@@ -1,9 +1,6 @@
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
-const users = {
-};
-
 //Creates new userId
 const addNewUser = (email, password, users) => {
   const userId = Math.random().toString(36).substring(2, 8);
@@ -18,7 +15,6 @@ const addNewUser = (email, password, users) => {
   return userId;
   
 };
-
 
 const updateLongUrl = (shortURL, content, userDb) => {
   userDb[shortURL].longURL = content;

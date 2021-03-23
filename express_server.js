@@ -1,12 +1,9 @@
-
 const express = require("express");
 const app = express();
 const PORT = 8080;
 const cookieSession = require('cookie-session');
 const morgan = require('morgan');
 const bodyParser = require("body-parser");
-const bcrypt = require('bcrypt');
-const saltRounds = 10;
 const { checkEmail, generateRandomString, urlsForUserId, addNewUser, authenticateUser, updateLongUrl } = require('./helpers.js');
 
 app.use(cookieSession({
@@ -18,13 +15,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('short'));
 app.set('view engine', 'ejs');
 
-
 const urlDatabase = {
-  
 };
 
 const users = {
-
 };
 app.get("/", (req, res) => {
   if (req.session.user_id) {
@@ -63,7 +57,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-//fetches and dsiplays shortURL for logged in user
+//fetches and displays shortURL for logged in user
 app.get("/urls/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL].userID === req.session.user_id) {
     const templateVars = {
@@ -93,7 +87,6 @@ app.get('/urls/:shortURL/delete', (req, res) => {
   } res.redirect('/urls');
 });
 
-
 app.get('/urls/:shortURL/edit', (req, res) => {
   if (urlDatabase[req.params.shortURL].userID === req.session.user_id) {
     let shortURL = req.params.shortURL;
@@ -102,10 +95,6 @@ app.get('/urls/:shortURL/edit', (req, res) => {
     res.redirect('/urls');
   }
 });
-
-// const updateLongUrl = (shortURL, content, userDb) => {
-//   userDb[shortURL].longURL = content;
-// };
 
 app.post('/urls/:editURL', (req, res) => {
   const shortURL = req.params.editURL;
@@ -162,4 +151,3 @@ app.post('/register', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
