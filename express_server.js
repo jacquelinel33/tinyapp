@@ -6,6 +6,15 @@ const morgan = require('morgan');
 const bodyParser = require("body-parser");
 const { checkEmail, generateRandomString, urlsForUserId, addNewUser, authenticateUser, updateLongUrl } = require('./helpers.js');
 
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
+
+
+app.get("/login.json", (req, res) => {
+  res.json(users);
+});
+
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
@@ -16,10 +25,26 @@ app.use(morgan('short'));
 app.set('view engine', 'ejs');
 
 const urlDatabase = {
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com"
 };
 
+
+
 const users = {
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+  
 };
+
 app.get("/", (req, res) => {
   if (req.session.user_id) {
     res.redirect('/urls');
@@ -48,7 +73,9 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
+//post requests will have a body, get requests will not
 app.post("/urls", (req, res) => {
+  console.log(req.body);
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
@@ -67,20 +94,22 @@ app.get("/urls/:shortURL", (req, res) => {
     };
     res.render("urls_show", templateVars);
   } else {
-    res.status(400).send('You do not have access to this link');
+    return res.status(400).send('You do not have access to this link');
   }
 });
 
 //redirects shortURL to longURL address
 app.get("/u/:shortURL", (req, res) => {
+  console.log("req.params", req.params)
+  console.log(urlDatabase);
   const longURL = urlDatabase[req.params.shortURL].longURL;
   if (longURL === undefined) {
-    res.status(404);
+    return res.status(404);
   }
   res.redirect(longURL);
 });
 
-app.get('/urls/:shortURL/delete', (req, res) => {
+app.post('/urls/:shortURL/delete', (req, res) => {
   if (urlDatabase[req.params.shortURL].userID === req.session.user_id) {
     delete urlDatabase[req.params.shortURL];
     res.redirect('/urls');
@@ -118,7 +147,7 @@ app.post('/login', (req, res) => {
     req.session['user_id'] = user_id;
     res.redirect('/urls');
   } else {
-    res.status(403).send('Wrong login');
+    return res.status(403).send('Wrong login');
   }
 });
 
@@ -130,17 +159,18 @@ app.get('/logout', (req, res) => {
 app.get('/register', (req, res) => {
   if (req.session.user_id) {
     res.redirect('/urls');
+  } else {
+    res.render('register');
   }
-  res.render('register');
 });
 
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   if (!email || !password) {
-    res.status(400).send('You must enter an email and password');
+     return res.status(400).send('You must enter an email and password');
   } else if (checkEmail(email, users)) {
-    res.status(400).send('Email already exists');
+    return res.status(400).send('Email already exists');
   } else {
     const user_id = addNewUser(email, password, users);
     req.session['user_id'] = user_id;

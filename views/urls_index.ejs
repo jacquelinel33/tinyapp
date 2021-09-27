@@ -31,9 +31,11 @@
               <input class="btn btn-secondary btn-sm" type="submit" value="Edit"> 
             </form>
             </td>
-            <td><form method="GET" action="/urls/<%=url%>/delete">
-              <input class="btn btn-secondary btn-sm" type="submit" value="Delete"> 
-            </form> </td>
+            <td>
+              <form method="POST" action="/urls/<%=url%>/delete">
+                <input class="btn btn-secondary btn-sm" type="submit" value="Delete"> 
+              </form> 
+            </td>
           </tr>
         <% } %>
         <% } else { %>
