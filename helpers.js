@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
 //Creates new userId
+//what parameters do we need in order to create a new user?
 const addNewUser = (email, password, users) => {
   const userId = Math.random().toString(36).substring(2, 8);
   
@@ -35,11 +36,12 @@ const checkEmail = (email, usersDb) => {
 
       return true;
     }
-  }
+  } 
+  return false;
 };
 
 const generateRandomString = () => {
-  const chars = 'abcdefghijklmnop0123456789';
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let random = "";
   for (let x = 0; x < 6; x++) {
     let ranIndex = Math.floor(Math.random() * chars.length);

@@ -12,10 +12,11 @@
 </head>
 
 <body>
-  <div class="container">
-    <h1>Register</h1>
+  <%- include('./partials/_header') %>
+  <div class="container" style="width:20em; margin: 2em 0 0 1.5em;">
+    <h1>Creat Account</h1>
   <form method="POST" action="/register">
-    <div style="width:20em;">
+    <div>
       <label for="email">Email:</label>  
         <input 
           style="width: 100%"
